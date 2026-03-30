@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# --- Valeur du hash + interface ---
+HASH="5ebe2294ecd0"
+INTERFACE="r2-eth1"
+
+# 1. Récupération de la MAC
+MAC=$(ip link show $INTERFACE | awk '/link\/ether/ {print $2}')
+
+# 2. Inversion du 7ème bit (bit Universal/Local)
+# On récupère le premier octet, on le convertit en décimal, on XOR avec 2, puis retour en hex
+IFS=':' read -r o1 o2 o3 o4 o5 o6 <<< "$MAC"
+o1_inv=$(printf "%02x" $((0x$o1 ^ 2)))
+
+# 3. Construction de l'EUI-64 (Inversion o1 + insertion ff:fe)
+EUI64="${o1_inv}${o2}:${o3}ff:fe${o4}:${m5}${o6}"
+
+# 4. Formatage du préfixe issu du hash (groupes de 4 hex)
+# Le TP groupe le hash 103053296d2c en 1030:5329:6d2c 
+P1=${HASH:0:4}
+P2=${HASH:4:4}
+P3=${HASH:8:4}
+
+# 5. Assemblage de l'adresse FE80 [cite: 55, 64]
+IPV6_LL="fe80:${P1}:${P2}:${P3}:${o1_inv}${o2}:${o3}ff:fe${o4}:${o5}${o6}"
+
+# 6. Application
+echo "MAC d'origine : $MAC"
+echo "Identifiant EUI-64 : ${o1_inv}${o2}:${o3}ff:fe${o4}:${o5}${o6}"
+echo "Adresse générée : $IPV6_LL"
+
+sudo ip addr add "${IPV6_LL}/64" dev $INTERFACE
+
+# Affichage des adresses de l'interface
+ip addr show dev $INTERFACE
+
+# Affichage de la table de routage
+ip -6 route
