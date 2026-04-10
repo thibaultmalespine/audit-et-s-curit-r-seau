@@ -1,0 +1,30 @@
+#!/bin/bash +x
+sudo ./clean
+sudo ./build_architecture
+sudo ip netns exec r1 sudo ./script_init_R1
+sudo ip netns exec r2 sudo ./script_init_R2
+sudo ip netns exec r1 sudo python3 advertissement_router1.py
+sudo ip netns exec r2 sudo python3 advertissement_router2.py
+
+# Récupération des adresses IPv6 globales
+IPV6_R1=$(sudo ip netns exec r1 ip -6 -o addr show scope global | awk '{print $4}' | cut -d/ -f1 | head -n1)
+IPV6_R2=$(sudo ip netns exec r2 ip -6 -o addr show scope global | awk '{print $4}' | cut -d/ -f1 | head -n1)
+echo $IPV6_R1
+echo $IPV6_R2
+
+# Ajout du tunnel sur r1
+sudo ip netns exec r1 sudo ip -6 tunnel add tnlipv6 mode ipip6 remote "$IPV6_R2" local "$IPV6_R1"
+sudo ip netns exec r1 ip link set tnlipv6 up
+# Modification et affichage des routes
+sudo ip netns exec r1 ip route del 192.168.87.0/24 via 10.10.0.2 dev r1-eth1 
+sudo ip netns exec r1 ip route add 192.168.87.0/24 dev tnlipv6 
+sudo ip netns exec r1 ip route 
+
+# Ajout du tunnel sur r2
+sudo ip netns exec r2 sudo ip -6 tunnel add tnlipv6 mode ipip6 remote "$IPV6_R1" local "$IPV6_R2"
+sudo ip netns exec r2 ip link set tnlipv6 up
+# Affichage des routes 
+sudo ip netns exec r2 ip route del 172.16.32.0/24 via 10.10.0.1 dev r2-eth1 
+sudo ip netns exec r2 ip route add 172.16.32.0/24 dev tnlipv6
+sudo ip netns exec r2 ip route 
+

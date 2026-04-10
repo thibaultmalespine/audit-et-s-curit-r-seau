@@ -1,0 +1,4 @@
+from scapy.all import *
+from scapy.layers.inet import IP, ICMP
+
+sr1(IP(dst="192.168.0.1")/ICMP()/Raw(load="payloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayloadpayload"))
